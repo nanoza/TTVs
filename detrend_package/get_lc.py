@@ -1,3 +1,12 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import exoplanet as xo
+from scipy.interpolate import interp1d
+from matplotlib.widgets import Slider, Button
+
+from helper_functions import find_nearest
+from helper_functions import determine_cadence
+
 def tic_id_from_simbad(other_id):
     #takes other_id (string) and queries Simbad to obtain the TIC ID
     
@@ -116,33 +125,7 @@ def get_transit_info(planet_id):
 
 
 
-def find_nearest(array, value):
-    #returns the value in an array closest to another input value
-    
-    array = np.asarray(array)
-    idx = (np.abs(array - value)).argmin()
-    return array[idx]
 
-
-
-
-def determine_cadence(times):
-    time_gaps = {}
-    for ii in range(1, len(times)):
-        time_gap = np.round(times[ii]-times[ii-1], 4)
-        if time_gap in time_gaps.keys():
-            time_gaps[time_gap] += 1
-        else:
-            time_gaps[time_gap] = 1
-            
-    #find the key that corresponds to the most data gaps, this is the cadence
-    cadence = max(time_gaps, key=time_gaps.get)
-    return cadence
-            
-        
-
-
-        
 
 
 def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False, 

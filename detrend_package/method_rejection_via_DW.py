@@ -1,3 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import exoplanet as xo
+from scipy.interpolate import interp1d
+from matplotlib.widgets import Slider, Button
+
+
 def test_DW_per_epoch(x_detrended, y_detrended, yerr_detrended, mask_detrended, mask_fitted_planet_detrended, period, t0s, duration):
     from scipy.special import erfcinv
     
@@ -160,4 +167,3 @@ def reject_epochs_by_DW(x_detrended, y_detrended, yerr_detrended, mask_detrended
             
         
 
-        

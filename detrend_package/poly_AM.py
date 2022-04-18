@@ -1,4 +1,10 @@
 
+import numpy as np
+import matplotlib.pyplot as plt
+import exoplanet as xo
+from scipy.interpolate import interp1d
+from matplotlib.widgets import Slider, Button
+
 def DurbinWatson(residuals):
     residual_terms = []
     for nres, res in enumerate(residuals):

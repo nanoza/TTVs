@@ -1,3 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import exoplanet as xo
+from scipy.interpolate import interp1d
+from matplotlib.widgets import Slider, Button
+
+
 def gp_model(time_star, lc_star, lc_err_star, time_model):
 
 

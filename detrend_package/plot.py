@@ -1,3 +1,13 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import exoplanet as xo
+from scipy.interpolate import interp1d
+from matplotlib.widgets import Slider, Button
+
+from helper_functions import bin_data
+
+
+
 def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, problem_times_input=None):
     #xs_star = time not in transit
     #ys_star = flux not in transit
@@ -53,6 +63,8 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
 
+    
+
 
     axtime = plt.axes([0.197, 0.1, 0.702, 0.09])
     stime = Slider(axtime, 'time', xmin, xmax, valinit=t_init, orientation="horizontal")
@@ -77,7 +89,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     button.on_clicked(save)
     
 
-
+    
     return(stime, button)
 
 
@@ -449,7 +461,7 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
     return None
 
 
-    
+
 
 
 

@@ -1,3 +1,11 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import exoplanet as xo
+from scipy.interpolate import interp1d
+from matplotlib.widgets import Slider, Button
+
+
+
 def reject_outliers_out_of_transit(time, flux, flux_err, mask, mask_fitted_planet, time_window, sigma_window):
     '''
     rejects outliers via moving median and sigma clipping outside of transit mask
@@ -119,7 +127,7 @@ def reject_outliers_out_of_transit(time, flux, flux_err, mask, mask_fitted_plane
 
 
 
-        
+
 
 
 def reject_outliers_everywhere(time, flux, flux_err, time_window, npoints_window, sigma_window):
