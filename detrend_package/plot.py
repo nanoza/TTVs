@@ -42,7 +42,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
     t = t_init*np.ones(np.shape(y))
 
-    l = ax.plot(t, y, lw=2, color='red')[0]
+    l = ax.plot(t, y, lw=2, color='k')[0]
 
 
     xmin, xmax = t0-(period*window)[0], t0+(period*window)[0]
@@ -57,17 +57,17 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     
     ax.text(xmin+(xmax-xmin)*.05, 0, title, fontsize = 27)
 
-    ax.axvline(t0, linewidth=1, color='k')
+    ax.axvline(t0, linewidth=1, color='k', ls='dashed')
     ax.set_xlabel("time [days]")
     ax.set_ylabel("intensity")
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
 
-    
+
 
 
     axtime = plt.axes([0.197, 0.1, 0.702, 0.09])
-    stime = Slider(axtime, 'time', xmin, xmax, valinit=t_init, orientation="horizontal")
+    stime = Slider(axtime, 'time', xmin, xmax, valinit=t_init, orientation="horizontal", color = 'k')
 
     def update(val):
         l.set_xdata(val*np.ones(np.shape(y)))
@@ -89,8 +89,8 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     button.on_clicked(save)
     
 
-    
-    return(stime, button)
+
+    return(stime, button, problem_times)
 
 
 
@@ -104,11 +104,12 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
     #t0s = midtransits in data
     #period = planet period to define plotting limits
     
-    sliders, buttons = [], []
+    sliders, buttons, problem_times = [], [], []
     
     if len(t0s) != len(x_transits):
         print("ERROR, length of t0s doesn't match length of x_transits")
     
+
     for ii in range(0, len(t0s)):
         t0 = t0s[ii]
         xs = x_transits[ii]
@@ -116,11 +117,19 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
         mask = mask_transits[ii]
         title = "epoch " + str(ii+1)
         
-        slider, button = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input)
+        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input)
         sliders.append(slider)
         buttons.append(button)
+        problem_times.append(problem_times_epoch)
+
+        plt.show()
     
-    return sliders, buttons
+
+    #turn list of lists into a flattened list
+    problem_times_flat = [item for sublist in problem_times for item in sublist]
+
+
+    return sliders, buttons, problem_times_flat
 
 
 

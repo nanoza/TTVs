@@ -82,8 +82,9 @@ def find_flux_jumps(star_id, flux_type, TESS = False, Kepler = False,
 
 
 
-    plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5)
-    plt.show()
+    _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5)
+
+
 
     return x_epochs, y_epochs, yerr_epochs, mask_epochs, mask_fitted_planet_epochs, problem_times, t0s, period, duration, cadence
 
@@ -114,11 +115,15 @@ def find_sap_and_pdc_flux_jumps(star_id, TESS = False, Kepler = False,
 
 
 #pulls in light curve
-[[sap_time, sap_lc, sap_lc_err, sap_mask, sap_mask_fitted_planet, \
-t0s_sap, period, duration, quarters, crowding, flux_fraction], \
-[pdc_time, pdc_lc, pdc_lc_err, pdc_mask, pdc_mask_fitted_planet, \
-t0s_pdc, period, duration, quarters, crowding, flux_fraction]]  = \
+[[sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
+sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \
+sap_duration, sap_cadence], \
+[pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
+pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
+pdc_duration, pdc_cadence]]  = \
 find_sap_and_pdc_flux_jumps('toi-1130', TESS=True, planet_number = 2, mask_width = 1.8)
+
+
 
 
 
