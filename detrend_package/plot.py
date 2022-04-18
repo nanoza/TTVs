@@ -162,7 +162,7 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
         row = 0
         
         for ii in range(0, len(t0s_in_data)):
-            if ii <= 3:
+            if len(t0s_in_data) <= 3:
                 ax_ii = ax[ii]#[column]
             else:
                 ax_ii = ax[row][column]

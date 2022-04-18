@@ -198,22 +198,28 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
         #switch to TESS BJD
         t0s = t0s - 2457000
         
-        #pull in short cadence TESS SPOC LC
-        lc_files_short_cadence = lk.search_lightcurve(
-            tic_id, mission='TESS', author = 'SPOC', cadence = 'short'
-        ).download_all(quality_bitmask="hardest", flux_column=flux_type)
+        if flux_type == 'qlp':
+            lc_files = lk.search_lightcurve(
+                tic_id, mission='TESS', author = 'qlp'
+            ).download_all(quality_bitmask="hardest")
         
-        #pull in long cadence TESS SPOC LC
-        lc_files_long_cadence = lk.search_lightcurve(
-            tic_id, mission='TESS', author = 'SPOC', cadence = 'long'
-        ).download_all(quality_bitmask="hardest", flux_column=flux_type)
-        
-        
-        #use short cadence TESS data if if exists, else use long cadence
-        if lc_files_short_cadence == []:
-            lc_files = lc_files_long_cadence
         else:
-            lc_files = lc_files_short_cadence
+            #pull in short cadence TESS SPOC LC
+            lc_files_short_cadence = lk.search_lightcurve(
+                tic_id, mission='TESS', author = 'SPOC', cadence = 'short'
+            ).download_all(quality_bitmask="hardest", flux_column=flux_type)
+
+            #pull in long cadence TESS SPOC LC
+            lc_files_long_cadence = lk.search_lightcurve(
+                tic_id, mission='TESS', author = 'SPOC', cadence = 'long'
+            ).download_all(quality_bitmask="hardest", flux_column=flux_type)
+
+
+            #use short cadence TESS data if if exists, else use long cadence
+            if lc_files_short_cadence == []:
+                lc_files = lc_files_long_cadence
+            else:
+                lc_files = lc_files_short_cadence
         
     if Kepler:
         #switch to Kepler BJD
@@ -232,8 +238,9 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
         quarters.append([np.min(file.time.value),
                         np.max(file.time.value)])
         
-        crowding.append(file.CROWDSAP)
-        flux_fraction.append(file.FLFRCSAP)
+        if flux_type != 'qlp':
+            crowding.append(file.CROWDSAP)
+            flux_fraction.append(file.FLFRCSAP)
         
         
     
