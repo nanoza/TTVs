@@ -1,0 +1,43 @@
+GFORTRAN module created from mandel.f on Fri Feb 28 13:02:12 2014
+MD5:48d8da197e0a28df97a1a7f71b0dd388 -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () () ()
+() () ())
+
+()
+
+()
+
+()
+
+()
+
+(2 'mandelmod' 'mandelmod' 'mandelmod' 1 ((MODULE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 ()
+() 0 0)
+3 'occultquad' 'mandelmod' 'occultquad' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN SUBROUTINE) (UNKNOWN 0 0 0 UNKNOWN ()) 4 0 (5 6
+7 8 9 10 11) () 0 () () 0 0)
+5 'z0' '' 'z0' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DIMENSION DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') (VARIABLE (INTEGER 4 0 0 INTEGER ()) 0
+11 ())) 0 () () 0 0)
+6 'u1' '' 'u1' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+7 'u2' '' 'u2' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+8 'p0' '' 'p0' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+9 'muo1' '' 'muo1' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (VARIABLE (INTEGER 4 0 0
+INTEGER ()) 0 11 ())) 0 () () 0 0)
+10 'mu0' '' 'mu0' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN DIMENSION DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (VARIABLE (INTEGER 4 0 0
+INTEGER ()) 0 11 ())) 0 () () 0 0)
+11 'nz' '' 'nz' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () 0 0)
+)
+
+('mandelmod' 0 2 'occultquad' 0 3)

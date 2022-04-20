@@ -1,0 +1,402 @@
+MODULE transitmod
+
+use params
+use planmod
+use jasminemod
+
+implicit none
+      
+contains
+      
+      
+!=======================================================================
+  SUBROUTINE transit(Rin,ressy)
+
+  implicit none  
+
+! Input variables
+  REAL(8), DIMENSION(nest_nPar) :: Rin           ! input parameters
+
+! Output
+  REAL(8) :: chi2                                ! merit function of fit  
+  REAL(8), DIMENSION(MT) :: ressy                ! C-O difference    
+
+! Internal variables 
+  INTEGER :: i,it,ic,it2
+  REAL(8) :: dpi,gauss,gmsun
+  REAL(8) :: phi,cphi,sphi,u,cu,su,sini,cosi 
+  REAL(8) :: rstarAU
+  REAL(8) :: dt
+  REAL(8) :: rminr,rmaxr                           ! min and max stellar distance for planet removal 
+  REAL(8) :: xobs,yobs,zobs                      ! unit vector toward observer 
+  REAL(8) :: xaux,yaux,zaux                      ! auxiliary vector to define `north'   
+  INTEGER :: aflag                               ! flag to indicate planet removal
+  INTEGER,DIMENSION(NPLMAX) :: nt_               ! number of computed transits  
+  REAL(8),DIMENSION(NPLMAX,MT) :: tc_,bpar_,vsky_   ! time, impact parameter and projected speed 
+  REAL(8),DIMENSION(NPLMAX,MT) :: tdur	         ! transit duration
+  REAL(8) :: bpar,vsky
+  REAL(8),DIMENSION(NPLMAX,MT) :: ttv,tdv
+  REAL(8),DIMENSION(MT) :: xx,yy,dyy,yyfit	
+  REAL(8) :: per1
+
+! Original variables
+  REAL(8), DIMENSION(taulen) :: tauvec
+
+!---------------------------------------------------------
+
+! Constants and initializations
+  gauss = 0.01720209895d0
+  gmsun = gauss*gauss	! units are Julian days and AU
+  dpi = acos(-1.d0)
+
+! Hardwired here
+  rminr = 0.001d0                                  
+  rmaxr = 10.0d0
+  xobs = 1.0d0
+  yobs = 0.0d0
+  zobs = 0.0d0
+  xaux = 0.0d0
+  yaux = 0.0d0
+  zaux = 1.0d0
+  
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+! === 1.0 DECLARATIONS ===
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+! Part deleted  
+! These are the parameters (nest_nPar=7)
+! p = Rin(1)   ! Planet's size
+! rhomstar = DSQRT(Rin(2)**3)  ! rho_{*}
+! bp = Rin(3)  ! Barycentre's impact parameter
+! Pdays = Rin(4)     ! Barycentre's period [days]
+! gamglobal = 1.0D0       ! Blending factor
+! samrecip = 1.0D0 !DABS(Rin(7)) ! Fp/F*
+! w1 = Rin(6) !0.5020388969205678D0 !Rin(6)    ! Limb darkening w1
+! w2 = Rin(7) !0.35816613852780127D0 ! Limb darkening w2
+! tmid = Rin(5)     ! Barycentre's transit time
+! e = 2.0D-8 ! Barycentre's e
+! wrad = 0.7853981633974483D0 ! Barycentre's w DATAN2(hb,kb)
+
+ mstar = 0.956d0
+ rstar = 0.880d0
+ rstarAU=rstar*695500.0d0/149597871.0d0
+
+! rhostar = 1.408d0
+! Update stellar radius
+! rstar = mstar/(rhostar/1.408d0)
+! rstar = rstar**(1.d0/3.d0)
+! rstarAU=rstar*695500.0d0/149597871.0d0
+
+! do i=1,12
+! write(*,*)i,Rin(i)
+!end do
+
+! Update planetary template from the parameter vector
+ mpl(1) = Rin(1)    
+ mpl(2) = Rin(2) 
+ lpl(2) = Rin(3)*dpi/1.8d2 ! mean longitude of 2nd planet
+ per1 = Rin(11)  !10.954204d0
+! write(*,*)per1
+ apl(1) = gmsun*mstar *(per1/(2.d0*dpi))**2 * (1.d0 + mpl(1)) 
+ apl(1) = apl(1)**(1.d0/3.d0)
+ apl(2) = gmsun*mstar *(Rin(4)/(2.d0*dpi))**2 * (1.d0 + mpl(2)) 
+ apl(2) = apl(2)**(1.d0/3.d0)
+ epl(1) = Rin(5)
+ epl(2) = Rin(6)
+ vpl(1) = Rin(7)*dpi/1.8d2 
+ vpl(2) = Rin(8)*dpi/1.8d2 
+ bpl(1) = 0.372d0   !Rin(11) 
+ bpl(2) = Rin(9)
+ opl(1) = 270.d0*dpi/1.8d2
+ opl(2) = (Rin(10)+270.d0)*dpi/1.8d2
+ if(opl(2).gt.2.d0*dpi) opl(2)=opl(2)-2.d0*dpi
+
+! Calculate ipl(1) so that we get the right bpl(1), assuming that opl(1)=270 deg
+  sini = apl(1)*(1.d0-epl(1)*epl(1))/(1.d0+epl(1)*cos(vpl(1)))
+!  write(*,*)apl(1)
+  sini = bpl(1)*rstarAU/sini !  bpl=1 corresponds to grazing, right
+!  write(*,*)bpl(1)
+  if(abs(sini).le.1.d0) then
+     ipl(1) = asin(sini)
+  else
+!     write(*,*)'Something is wrong, |sini|>1 ...'
+!     ipl(1) = 0.d0
+        aflag = -1
+        goto 666
+  end if
+
+! Calculate ipl(2) so that we get the right bpl(2)
+! first calculate inclination with respect to sky plane
+  cosi = apl(2)*(1.d0-epl(2)*epl(2))/(1.d0+epl(2)*cos(vpl(2)))
+  cosi = bpl(2)*rstarAU/cosi
+! now inclination with respect to transit plane (will be set to infinity if sin=0)
+  sini = abs(cosi/sin(opl(2))) ! absolute value to enforce i>0
+  if(abs(sini).le.1.d0) then
+     ipl(2) = asin(sini) ! chooses prograde orbit (could be set to -asin(sini) for retro)  
+  else
+! this has no solution if opl(2) ~ 0 or dpi, because we may not get bpl(2)    
+!     write(*,*)'No ipl(2) solution, bpl(2),opl(2)=',bpl(2),opl(2)*1.8d2/dpi
+     aflag = -1
+     goto 666
+  end if
+
+ ! Compute lpl(1) 
+  phi = -vpl(1)  ! i.e. true longitude = 0 for transit
+  cphi = cos(phi)
+  sphi = sin(phi)
+  su = sqrt(1.d0-epl(1)*epl(1))*sphi
+  cu = epl(1)+cphi
+  u = atan2(su,cu)
+  su = su/(1.d0+epl(1)*cphi) 
+  lpl(1) =  (u-epl(1)*su) + vpl(1)
+  lpl(1) = lpl(1) - (2.d0*dpi)/Rin(11) * Rin(12) ! removed because ref epoch = transit epoch
+
+! Compute lpl(2), this is not going to be exact - but close enough for low i_c 
+!  phi = -vpl(2)  ! i.e. true longitude = 0 for transit
+!  cphi = cos(phi)
+!  sphi = sin(phi)
+!  su = sqrt(1.d0-epl(2)*epl(2))*sphi
+!  cu = epl(2)+cphi
+!  u = atan2(su,cu)
+!  su = su/(1.d0+epl(2)*cphi) 
+!  lpl(2) =  (u-epl(2)*su) + vpl(2)
+!  lpl(2) = lpl(2) - (2.d0*dpi)/Rin(4) * Rin(6)
+
+! Compute lpl(2) (removed)
+
+! Note sure what the following is for 
+! tauarray
+  IF( globalflag ) THEN
+   ! donothing
+  ELSE
+     DO i=1,taulen
+        tauvec(i) = Rin(nparamorig+i)
+     END DO
+  END IF
+  
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 2.0 CONVERT FITTED PARAMETERS ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 3.0 TIME ARRAY ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 3.1 Offset time array for mid-transit time
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+! Part deleted
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 3.2 Jasmine Call
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~    
+
+ ! We call Jasmine here so that we may implement
+ ! selective resampling
+
+ ! Jasmine calculates various durations in an exact manner
+
+! Part deleted
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 3.3 Explode the time array
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! We now have to 'explode' the time array
+ ! This is part of the process for accounting for the integration time
+ ! of each time stamp.
+ ! CAVEATS:
+ ! * If m=0, no integration is required.
+ ! * If we are in OOT, no integation is required (we define intransit times stamps
+ !   as those < 1.1*0.5*(t_T + integration_time) (the 1.1 gives a 10% safety net)
+ ! * Points which are exploded are assigned a logic flag 1 in the exploded(i) array
+
+ ! Part deleted
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 4.0 GENERATE LIGHTCURVE ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 4.1 Main call to PLAN
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ !call plan(t_big,Pdays,0.0D0,p,aR,e,wrad,bp,&
+ !     u1,u2,fpri,k_max,mulimb0)
+
+! Call transit routine
+  dt = dt0
+  aflag = 0
+  call ntrans_rmvs3(mstar,rminr,rmaxr,npl,mpl,rpl,aflag,&
+       apl,epl,ipl,opl,vpl,lpl,t0,tstart,tend,dt,&
+       xobs,yobs,zobs,xaux,yaux,zaux,ntrans,jtrans,&
+       nt_,tc_,bpar_,vsky_)
+  
+! Test write if transits completely off
+!  do i=1,ntrans
+!     do it=1,nt_(i)        
+!        if(abs(tc_(i,it)-Rin(i+4)-(it-1.d0)*Rin(i+2)).gt.10.d0) then
+!           write(*,*)apl(1),epl(1),ipl(1),opl(1),vpl(1),lpl(1),nt_(i)           
+!           write(*,*)1,(tc_(i,1)-Rin(i+4)-(1-1.d0)*Rin(i+2)),tc_(i,1)
+!           write(*,*)it,(tc_(i,it)-Rin(i+4)-(it-1.d0)*Rin(i+2)),tc_(i,it)
+!           goto 100
+!        end if
+!     end do
+!  end do
+!100 continue
+
+! Check if any planets removed and abort if abort flag .ne. 0
+  if(aflag.ne.0) then
+     goto 666
+  end if
+  
+! Check if we have enough transits
+  do i=1,ntrans
+     if(nt_(i).lt.(cycl(i,nt(i))-cycl(i,1)+1)) then
+        aflag = 4
+        goto 666
+     end if
+  end do
+  
+! Calculate duration
+  do i=1,ntrans
+     do it=1,nt_(i)
+        bpar = bpar_(i,it)
+        vsky = vsky_(i,it)
+        if(rstarAU.ge.bpar) then
+           tdur(i,it)=2.d0*sqrt(rstarAU*rstarAU-bpar*bpar)/vsky
+        else
+           tdur(i,it)=0.d0
+        end if
+     end do
+  end do
+  
+! This part was changed, record calculated times and durations for recorded cycles 
+  do i=1,ntrans
+     do it=1,nt(i)
+        ic = cycl(i,it)
+        ttv(i,it) = tc_(i,ic)
+        tdv(i,it) = tdur(i,ic)
+     end do
+  end do
+
+! Write output
+!  do i=1,ntrans
+!     write(*,*)i,nt_(i)
+!     do it=1,nt_(i)
+!        write(*,*)it,tc_(i,it),tdur(i,it)
+!     end do
+!  end do
+  
+  
+ !  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 4.2 Transformations
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! Transformatins deleted
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 4.3 Implode the flux array
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! Implode the flux array, using standard binning
+ ! First stage is to un-flatten the flux array from a
+ ! a 1D vector to a 2D array
+
+ ! This part was deleted
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 5.0 PRINT RESULTS ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+!!!!! This part was deleted, check on output later 
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 6.0 COMPUTE CHI^2 ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 6.1 Basic chi^2
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! Calculated flux = flux(i)
+ ! Observed flux = fobs(i)
+ ! Observed error = sigfobs(i)
+! chi2=0.0D0
+! DO i=1,nz
+!   chi2 = chi2 + ((flux(i) - fobs(i))/sigfobs(i))**2
+! END DO
+!
+! DO i=1,nz
+!   ressy(i) = flux(i) - fobs(i)
+!
+! END DO
+
+  chi2 = 0.d0
+  if(sflag.eq.1.or.sflag.eq.3) then
+     do i=1,ntrans
+!        write(*,*)i,nt(i)
+        do it=1,nt(i)
+!           write(*,*)cycl(i,it),ttv(i,it),tdv(i,it)
+           chi2 = chi2 + ((ttv(i,it)-tobs(i,it))/dtobs(i,it))**2    
+        end do
+     end do
+  end if
+  if(sflag.eq.2.or.sflag.eq.3) then
+     do i=1,ntrans
+        do it=1,nt(i)
+           chi2 = chi2 + ((tdv(i,it)-tobs2(i,it))/dtobs2(i,it))**2    
+        end do
+     end do
+  end if
+
+!  if(chi2.lt.500.d0) write(*,*)'chi2=',chi2
+!  write(*,*)'chi2=',chi2
+!  stop
+
+666 continue
+  
+! record things into ressy
+  if(aflag.ne.0) then
+     do i=1,ntrans
+        do it=1,nt(i) 
+           ttv(i,it) = 0.d0
+           tdv(i,it) = 0.d0
+        end do
+     end do
+  end if
+  
+!  write(*,*)aflag
+!  write(*,*)nt(1) 
+!  do it=1,nt(1)  
+!     write(*,*)it,ttv(1,it),tdv(1,it)
+!  end do
+!  stop
+
+  if(sflag.eq.1.or.sflag.eq.3) then
+     DO it=1,nt(1) 
+        ressy(it) = ttv(1,it) - tobs(1,it)
+     END DO
+  end if
+  if(sflag.eq.3) then 
+     DO it=1,nt(1)
+        it2 = nt(1)+it
+        ressy(it2) = tdv(1,it) - tobs2(1,it)
+     END DO
+  end if
+  if(sflag.eq.2) then 
+     DO it=1,nt(1) 
+        ressy(it) = tdv(1,it) - tobs2(1,it)
+     END DO
+  end if
+
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 7.0 CLOSE PROGRAM ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+END SUBROUTINE transit
+!=======================================================================
+
+END MODULE transitmod

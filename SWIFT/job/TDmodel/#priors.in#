@@ -1,0 +1,20 @@
+0.00005 0.00005 0.0 0.0002 = m_b/m_star
+0.00005 0.00005 0.0 0.0001 2 = m_c/m_star
+13.781120 0.000012 0.000012 13.781120 3 = P_b (days), Gaussian prior
+23.088773 0.1 22.89 23.29 2   = P_c (days)  
+0.7329 0.0032 0.0032 0.7329 3 = t_b (days), Gaussian prior enforced (as if perturbations were absent) 
+2.8197 0.0024 0.0024 2.8197 3 = t_c (days), Gaussian prior enforced (as if perturbations were absent) 
+0.2 0.1 0.0 0.3 2            = e_b
+0.2 0.1 0.0 0.3 2            = e_c
+180.0 180.0 0.0 360.0 2      = varpi_b (deg), longitude!
+180.0 180.0 0.0 360.0 2      = varpi_c (deg) 
+0.389 0.05 0.336 0.432 2     = b_b, 0.380_{-0.044}^{+0.052} 
+0.412 0.05 0.349 0.499 2     = b_c, 0.412_{-0.063}^{+0.087}  
+180.0 180.0 0.0 360.0 2      = Omega_c-Omega_b (deg), Omega_b is fixed at 270 deg by def.
+
+5.632 2.0 2.3010 5.8739 3          = Gaussian prior on rho_star
+28383.0D0 11274.0D0 12.0D0 84.0D0 1.0D0 = controlsA
+1.0D0 0.0D0 0.0D0 0.0D0 1.0D0 = controlsB
+Rsol Rdel Rmin Rmax Rflag = [parameter]
+nplen nslen nrlen nelen nlength = [controlsA]
+priflag secflag rvflag ephflag globalflag = [controlsB]
