@@ -1,0 +1,76 @@
+#old transit model
+
+import pymc3 as pm
+import pymc3_ext as pmx
+import aesara_theano_fallback.tensor as tt
+
+x_plot = np.arange(np.min(x), np.max(x), 0.01)
+with pm.Model() as model:
+
+    #https://exoplanetarchive.ipac.caltech.edu/overview/koi-3678
+    r_star = pm.Uniform("r_star", lower=.1, upper=100) 
+    
+    rp_over_rstar = pm.Uniform('rp_over_rstar', lower=0, upper=.1, testval=(np.sqrt(bls_depth)))
+    
+    
+    #log_rho_star = pm.Uniform('log_rho_star', lower=10**(-3), upper=10**3)
+    #rho_star = pm.Deterministic('rho_star', tt.exp(log_rho_star))
+    
+    
+    
+    
+    b = pm.Uniform('b', lower=0, upper=1)
+    
+    u = xo.QuadLimbDark("u", testval=np.array([0.3, 0.2]))
+    star = xo.LimbDarkLightCurve(u)
+    
+
+    # Now we have a parameter for each transit time for each planet:
+    transit_times = []
+    for i in range(1):
+        transit_times.append(
+            pm.Normal(
+                "tts_{0}".format(i),
+                mu=t0s,
+                sd=10.0,
+                shape=len(t0s),
+            )
+        )
+
+    # Set up an orbit for the planets
+    orbit = xo.orbits.TTVOrbit(b=b, transit_times=transit_times, ror=rp_over_rstar)
+
+    # It will be useful later to track some parameters of the orbit
+    pm.Deterministic("t0", orbit.t0)
+    pm.Deterministic("period", orbit.period)
+    pm.Deterministic("a", orbit.a)
+    pm.Deterministic("rho_star", orbit.rho_star)
+    for i in range(1):
+        pm.Deterministic("ttvs_{0}".format(i), orbit.ttvs[i])
+        
+    # A jitter term describing excess white noise
+    jitter = pm.Normal("jitter", mu=0., sd=0.1)
+    
+    yerr_model = pm.Deterministic('yerr_model', tt.sqrt(jitter**2. + yerr**2.))
+
+    # The rest of this block follows the transit fitting tutorial
+    light_curves = xo.LimbDarkLightCurve(u).get_light_curve(
+        orbit=orbit, t=x, r=rp_over_rstar*r_star, texp=cadence
+    )
+    light_curve = pm.math.sum(light_curves, axis=-1)
+    pm.Deterministic("light_curves", light_curves)
+    
+    #create lc for plot
+    light_curves_plot = xo.LimbDarkLightCurve(u).get_light_curve(
+        orbit=orbit, t=x_plot, r=rp_over_rstar*r_star, texp=cadence
+    )
+    light_curve_plot = pm.math.sum(light_curves_plot, axis=-1)
+    pm.Deterministic("light_curves_plot", light_curves_plot)
+    
+
+
+    pm.Normal("obs", mu=light_curve, sd=yerr_model, observed=y)
+
+    map_soln = model.test_point
+    map_soln = pmx.optimize(start=map_soln, vars = rp_over_rstar)
+    map_soln = pmx.optimize(start=map_soln)
