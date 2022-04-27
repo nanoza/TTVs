@@ -1,0 +1,453 @@
+MODULE transitmod
+
+use params
+use planmod
+use jasminemod
+implicit none
+      
+contains
+      
+      
+!=======================================================================
+SUBROUTINE transit(Rin,nz,ressy,show,&
+                   tobs,fobs,sigfobs,epoch_seq,fobswei,sigfobswei,&
+                   Nresam,integ_big,seccy)
+         
+ implicit none
+      
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ REAL(8), DIMENSION(nest_nPar) :: Rin           ! R in vector
+ INTEGER, INTENT(IN) :: nz, Nresam, show
+ LOGICAL, INTENT(IN) :: seccy          
+ REAL(8), INTENT(IN) :: integ_big
+ REAL(8) :: chi2                                ! merit function of fit
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ INTEGER :: i, j
+ ! Data terms
+ REAL(8), DIMENSION(nz), INTENT(IN) :: tobs, fobs, sigfobs, fobswei, sigfobswei
+ INTEGER, DIMENSION(nz), INTENT(IN) :: epoch_seq
+ REAL(8), DIMENSION(nz) :: tdiff, flux, ressy
+ REAL(8), DIMENSION(OOTlen) :: OOTvec, weivec
+ REAL(8), DIMENSION(taulen) :: tauvec
+ !!REAL(8), DIMENSION(OOSlen) :: OOSvec
+ ! Parameters
+ REAL(8) ::  p, rhomstar, bp, Pdays, gamglobal, samrecip, u1, tmid, w1, w2!, u1pu2
+ ! Derived parameters
+ REAL(8) :: u2, wrad, wavP, wavS, e, aR, rhoP, rhoS
+ REAL(8) :: secpri, tsec, secphas, fpri
+ REAL(8) :: tT, tF, DurP, t12, t34, rhostar, ideg, RVoffset, s14
+ ! Blending stuff
+ REAL(8), DIMENSION(15) :: gam
+ REAL(8), DIMENSION(nz) :: gammy
+ REAL(8), DIMENSION(nz*Nresam) :: gammy_big
+ REAL(8) :: gamrecip, sam
+ ! Explosion variables
+ INTEGER :: k_big, k_max, nz_big
+ REAL(8) :: Ndash, integ_small
+ ! Explosion flag array
+ INTEGER, DIMENSION(nz) :: explo
+ ! Unflattened arrays
+ REAL(8), DIMENSION(Nresam,nz) :: t_arr, flux_arr
+ ! Flattened arrays
+ REAL(8), DIMENSION(nz*Nresam) :: t_big
+ REAL(8), DIMENSION(nz*Nresam) :: mulimb0!, b0
+ INTEGER, DIMENSION(nz*Nresam) :: epoch_seq_big
+ ! show=1 variables
+ REAL(8), DIMENSION(nz) :: res
+ REAL(8) :: time, epoch, epochmid, tmidfold, tsecfold
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 1.0 DECLARATIONS ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ gam(1)  = 1.017D0
+ gam(2)  = 1.020D0
+ gam(3)  = 1.021D0
+ gam(4)  = 1.031D0
+ gam(5)  = 1.000D0
+ gam(6)  = 1.020D0
+ gam(7)  = 1.018D0
+ gam(8)  = 1.027D0
+ gam(9)  = 1.000D0
+ gam(10) = 1.020D0
+ gam(11) = 1.020D0
+ gam(12) = 1.031D0
+ gam(13) = 1.000D0
+ gam(14) = 1.020D0
+ gam(15) = 1.020D0
+
+ p = Rin(1)   ! Planet's size
+ rhomstar = DSQRT(Rin(2)**3)  ! rho_{*}
+ bp = Rin(3)  ! Barycentre's impact parameter
+ Pdays = Rin(4)     ! Barycentre's period [days]
+ gamglobal = 1.0D0       ! Blending factor
+ samrecip = 1.0D0 !DABS(Rin(7)) ! Fp/F*
+ w1 = Rin(6) !0.5020388969205678D0 !Rin(6)    ! Limb darkening w1
+ w2 = Rin(7) !0.35816613852780127D0 ! Limb darkening w2
+ tmid = Rin(5)     ! Barycentre's transit time
+ e = 2.0D-8 ! Barycentre's e
+ wrad = 0.7853981633974483D0 ! Barycentre's w DATAN2(hb,kb)
+
+ ! tauarray
+ IF( globalflag ) THEN
+   ! donothing
+ ELSE
+   DO i=1,taulen
+     tauvec(i) = Rin(nparamorig+i)
+   END DO
+ END IF
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 2.0 CONVERT FITTED PARAMETERS ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ nz_big = nz*Nresam
+
+ ! Calculate wavP
+ wavP = fivehalfpi - wrad
+ IF( wavP .GT. twopi ) THEN
+   wavP = wavP - twopi
+ END IF
+ wavS = wavP + pi
+ IF( wavS .GT. twopi ) THEN
+   wavS = wavS - twopi
+ END IF
+ ! Calculate varrhoP and varrhoS
+ rhoP = 1.0D0 - e**2
+ rhoS = rhoP/(1.0D0+e*DCOS(wavS))
+ rhoP = rhoP/(1.0D0+e*DCOS(wavP))
+
+ ! Convert rhomstar to aR (keep units in days)
+ !aR = (DSQRT(rhomstar**3)*Grv*(Pdays*86400.0D0)**2)/(3.0D0*pi)
+ aR = rhomstar*Grvx*Pdays**2
+ aR = aR**third
+
+ ! Get u2
+! u2 = u1pu2 - u1
+! u1 = w1*costheta + w2*sintheta
+! u2 = -w1*sintheta + w2*costheta
+ u2 = DSQRT(w1) !u1+u2
+ u1 = 2.0D0*u2*w2
+ u2 = u2 - u1
+ ! Override secondary eclipses to have no LD
+ IF( seccy ) THEN
+   u1 = 0.0D0
+   u2 = 0.0D0
+ END IF
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 3.0 TIME ARRAY ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 3.1 Offset time array for mid-transit time
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ DO i = 1,nz
+   IF( globalflag .OR. seccy ) THEN
+     ! Use a global tmid time
+     tdiff(i) = tobs(i) - tmid
+   ELSE
+     ! Use individual transit times
+     tdiff(i) = tobs(i) - tauvec(epoch_seq(i))
+     !tdiff(i) = tobs(i) - tmid ! Temp holding until intelligence.o included
+   END IF
+ END DO
+
+ DO i = 1,nz
+   IF( tobs(i) .GE. 54964.51146512045D0 .AND. tobs(i) .LT. 55002.51997350468D0 ) THEN
+     gammy(i) = gam(1)
+   ELSE IF( tobs(i) .GE. 55002.51997350468D0 .AND. tobs(i) .LT. 55093.2147943383D0 ) THEN
+     gammy(i) = gam(2)
+   ELSE IF( tobs(i) .GE. 55093.2147943383D0 .AND. tobs(i) .LT. 55185.375810579266D0 ) THEN
+     gammy(i) = gam(3)
+   ELSE IF( tobs(i) .GE. 55185.375810579266D0 .AND. tobs(i) .LT. 55276.48955000917D0 ) THEN
+     gammy(i) = gam(4)
+   ELSE IF( tobs(i) .GE. 55276.48955000917D0 .AND. tobs(i) .LT. 55372.44940168748D0 ) THEN
+     gammy(i) = gam(5)
+   ELSE IF( tobs(i) .GE. 55372.44940168748D0 .AND. tobs(i) .LT. 55467.015344030755D0 ) THEN
+     gammy(i) = gam(6)
+   ELSE IF( tobs(i) .GE. 55467.015344030755D0 .AND. tobs(i) .LT. 55515.99331677365D0 ) THEN
+     gammy(i) = gam(7)
+   ELSE IF( tobs(i) .GE. 55515.99331677365D0 .AND. tobs(i) .LT. 55642.53724335384D0 ) THEN
+     gammy(i) = gam(8)
+   ELSE IF( tobs(i) .GE. 55642.53724335384D0 .AND. tobs(i) .LT. 55728.994186294054D0 ) THEN
+     gammy(i) = gam(9)
+   ELSE IF( tobs(i) .GE. 55739.835638486584D0 .AND. tobs(i) .LT. 55833.277845301614D0 ) THEN
+     gammy(i) = gam(10)
+   ELSE IF( tobs(i) .GE. 55834.1986379302D0 .AND. tobs(i) .LT. 55931.33445044336D0 ) THEN
+     gammy(i) = gam(11)
+   ELSE IF( tobs(i) .GE. 55932.418064826525D0 .AND. tobs(i) .LT. 56015.03062305053D0 ) THEN
+     gammy(i) = gam(12)
+   ELSE IF( tobs(i) .GE. 56015.72674011688D0 .AND. tobs(i) .LT. 56106.066162428935D0 ) THEN
+     gammy(i) = gam(13)
+   ELSE IF( tobs(i) .GE. 56107.13008618061D0 .AND. tobs(i) .LT. 56204.331588511515D0 ) THEN
+     gammy(i) = gam(14)
+   ELSE IF( tobs(i) .GE. 56206.50817485861D0 .AND. tobs(i) .LT. 56304.13718779086D0 ) THEN
+     gammy(i) = gam(15)
+   ELSE
+     gammy(i) = 1.0D0
+   END IF
+ END DO
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 3.2 Jasmine Call
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~    
+
+ ! We call Jasmine here so that we may implement
+ ! selecive resampling
+
+ ! Jasmine calculates various durations in an exact manner
+ IF( seccy ) THEN
+   ! Use Jasmine's secpri value to get tsec & secphas
+   call jasmine(bp,p,e,wrad,aR,Pdays,0,&
+                tT,tF,DurP,t12,t34,rhostar,&
+                ideg,secpri,s14,RVoffset,fpri)
+ ELSE
+   secpri = 0.5D0*86400.0D0*Pdays
+   fpri = 1.5707963267948966D0 - wrad
+ END IF
+ tsec = (secpri/86400.0D0) + tmid
+ secphas = secpri/(86400.0D0*Pdays)
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 3.3 Explode the time array
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! We now have to 'explode' the time array
+ ! This is part of the process for accounting for the integration time
+ ! of each time stamp.
+ ! CAVEATS:
+ ! * If m=0, no integration is required.
+ ! * If we are in OOT, no integation is required (we define intransit times stamps
+ !   as those < 1.1*0.5*(t_T + integration_time) (the 1.1 gives a 10% safety net)
+ ! * Points which are exploded are assigned a logic flag 1 in the exploded(i) array
+
+ IF( Nresam .GT. 1 ) THEN ! We only need to do this if Nresam > 1
+  ! Stage one, create 2D time array
+  k_big = 0
+  Ndash = 0.5D0*(Nresam+1.0D0)     ! These two are commonly used
+  integ_small = integ_big/Nresam   ! later, so easier to define here
+  DO i=1,nz
+   ! You add a 2nd condition here eg selective resampling, SC/LC mixed data, etc
+   IF( sigfobs(i) .LE. flick ) THEN ! All data before this point is LC
+    explo(i) = 1 ! Explosion is occuring, flag it
+    DO j=1,Nresam
+     ! Performing explosion
+     k_big = k_big + 1
+     t_arr(j,i) = tdiff(i) + (j-Ndash)*integ_small
+     ! Stage two, flatten the 2D array into a 1D array
+     t_big(k_big) = t_arr(j,i)
+     gammy_big(k_big) = gammy(i)
+     epoch_seq_big(k_big) = epoch_seq(i)
+    END DO
+   ELSE
+    k_big = k_big + 1
+    explo(i) = 0 ! No explosion occured for this timestamp
+    t_big(k_big) = tdiff(i)
+    gammy_big(k_big) = gammy(i)
+    epoch_seq_big(k_big) = epoch_seq(i)
+   END IF
+  END DO
+  k_max = k_big
+ ELSE
+  ! Infinitessimal integration time => go as normal
+  DO i=1,nz
+   t_big(i) = tdiff(i)
+   gammy_big(i) = gammy(i)
+   explo(i) = 0
+   epoch_seq_big(i) = epoch_seq(i)
+  END DO
+  k_max = nz
+ END IF
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 4.0 GENERATE LIGHTCURVE ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 4.1 Main call to PLAN
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ call plan(t_big,Pdays,0.0D0,p,aR,e,wrad,bp,&
+      u1,u2,fpri,k_max,mulimb0)
+
+ !  ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 4.2 Transformations
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! Define reciprocals of various parameters to speed up computation
+ sam = 1.0D0/samrecip
+ gamrecip = 1.0D0/gamglobal ! gam = blending factor
+ ! PERFORM MODEL -> OBSERVATIONS TRANSFORMATIONS
+ IF( seccy ) THEN
+   DO i=1,k_max
+   ! i) Secondary Eclipse Transformation
+     mulimb0(i) = mulimb0(i) + sam - 1.0D0
+     mulimb0(i) = mulimb0(i)*samrecip
+   END DO
+ END IF
+ DO i=1,k_max
+   ! ii) Blending Transformation
+   mulimb0(i) = mulimb0(i) + gammy_big(i) - 1.0D0
+   mulimb0(i) = mulimb0(i)/gammy_big(i)
+   mulimb0(i) = mulimb0(i) + gamglobal - 1.0D0
+   mulimb0(i) = mulimb0(i)*gamrecip
+ END DO
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 4.3 Implode the flux array
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! Implode the flux array, using standard binning
+ ! First stage is to un-flatten the flux array from a
+ ! a 1D vector to a 2D array
+
+ IF( Nresam .GT. 1 ) THEN  ! Nresam>1 => implosions required
+  k_big = 0
+  DO i=1,nz
+   ! For ith point, is an implosion needed?
+   IF( explo(i) == 1 ) THEN
+    ! Stage one, un-flatten the flux array
+    DO j=1,Nresam
+     k_big = k_big + 1
+     flux_arr(j,i) = mulimb0(k_big)
+    END DO
+    ! Stage two, perform binning
+    flux(i) = 0.0D0
+    DO j=1,Nresam
+     flux(i) = flux(i) + flux_arr(j,i)
+    END DO
+    flux(i) = flux(i)/Nresam
+   ELSE
+    k_big = k_big + 1
+    flux(i) = mulimb0(k_big)
+   END IF
+  END DO
+ ELSE
+ ! Infinitessimal integration time => go as normal
+  DO i=1,nz
+   flux(i) = mulimb0(i)
+  END DO
+ END IF
+
+ ! Linear optimization of OOTsfobswei, sigfobswei
+ OOTvec(:) = 0.0D0; weivec(:) = 0.0D0
+ DO j=1,OOTlen
+   DO i=1,nz
+     IF( epoch_seq(i) .EQ. j ) THEN
+       OOTvec(j) = OOTvec(j) + flux(i)*fobswei(i)
+       weivec(j) = weivec(j) + flux(i)**2*sigfobswei(i)
+     END IF
+   END DO
+   IF( weivec(j) .NE. 0.0D0 ) THEN
+     OOTvec(j) = OOTvec(j)/weivec(j)
+   ELSE
+     OOTvec(j) = 1984.0D0 ! error flag
+   END IF
+ END DO
+
+ ! Now normalize
+ DO i=1,nz
+   ! iii) OOT Transformation
+   flux(i) = flux(i)*OOTvec(epoch_seq(i))
+ END DO
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 5.0 PRINT RESULTS ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ res(:) = 0.0D0
+ ! PRIMARY TRANSIT
+ IF (show == 1) then
+ ! First we do full lightcurve
+   open(unit=91,file='PRI_full.jam')
+   DO i=1,nz
+     IF( globalflag .OR. seccy ) THEN
+       time = tdiff(i) + tmid
+     ELSE
+       time = tdiff(i) + tauvec(epoch_seq(i))
+     END IF
+     res(i) = ( fobs(i) - flux(i) )*1.0D6
+     write(91,*) time,fobs(i),sigfobs(i),flux(i)
+   END DO
+   close(91)
+ ! Next we do the the folded LC
+   epochmid = tmid/Pdays
+   tmidfold = tmid - epochmid*Pdays
+   open(unit=92,file='PRI_fold.jam')
+   DO i=1,nz
+     IF( globalflag .OR. seccy ) THEN
+       time = tdiff(i) + tmid
+     ELSE
+       time = tdiff(i) + tauvec(epoch_seq(i))
+     END IF
+     epoch = time/(Pdays)
+     time = time - epoch*Pdays
+     time = time - tmidfold
+     IF( time .GE. 0.5D0*Pdays) THEN
+       time = time - Pdays
+     ELSE IF( time .LE. (-0.5D0*Pdays)) THEN
+       time = time + Pdays
+     END IF
+     write(92,*) time,fobs(i),sigfobs(i),flux(i)
+   END DO
+   close(92) 
+ END IF
+ ! SECONDARY ECLIPSE
+ IF (show == 2) THEN
+   ! First we do full lightcurve
+   open(unit=93,file='SEC_full.jam')
+   DO i=1,nz
+     time = tdiff(i) + tmid
+     res(i) = ( fobs(i) - flux(i) )*1.0D6
+     write(93,*) time,fobs(i),sigfobs(i),flux(i)
+   END DO
+   close(93)
+   ! Next we do the the folded LC
+   epochmid = tsec/Pdays
+   tsecfold = tsec - epochmid*Pdays
+   open(unit=94,file='SEC_fold.jam')
+   DO i=1,nz
+     time = tdiff(i)+tmid
+     epoch = time/(Pdays)
+     time = time - epoch*Pdays
+     time = time - tsecfold
+     IF( time .GE. 0.5D0*Pdays) THEN
+       time = time - Pdays
+     ELSE IF( time .LE. (-0.5D0*Pdays)) THEN
+       time = time + Pdays
+     END IF
+     write(94,*) time,fobs(i),sigfobs(i),flux(i)
+   ENDDO
+   close(94) 
+ END IF
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 6.0 COMPUTE CHI^2 ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+ ! 6.1 Basic chi^2
+ ! ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+ ! Calculated flux = flux(i)
+ ! Observed flux = fobs(i)
+ ! Observed error = sigfobs(i)
+ chi2=0.0D0
+ DO i=1,nz
+   chi2 = chi2 + ((flux(i) - fobs(i))/sigfobs(i))**2
+ END DO
+
+ DO i=1,nz
+   ressy(i) = flux(i) - fobs(i)
+ END DO
+
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ ! === 7.0 CLOSE PROGRAM ===
+ ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+END SUBROUTINE transit
+!=======================================================================
+
+END MODULE transitmod
