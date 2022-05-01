@@ -1,0 +1,19 @@
+0.573400591177857026E-04 0.0 0.0 0.0 0 = m_b/m_star
+0.213489761371082610E-03 0.0 0.0 0.0 0 = m_c/m_star
+0.208559347415527043E+03 0.0 0.0 0.0 0 = lambda_c (days)
+0.835107379572304694E+03 0.0 0.0 0.0 0 = P_c (days)   
+0.426525868271711461E+00 0.0 0.0 0.0 0 = e_b
+0.110766790880476224E+00 0.0 0.0 0.0 0 = e_c
+0.244336908114509498E+03 0.0 0.0 0.0 0 = varpi_b (deg), longitude!
+0.286797998060668363E+03 0.0 0.0 0.0 0 = varpi_c (deg), longitude!
+0.815228427596678813E+02 0.0 0.0 0.0 0 = b_c
+0.234281194689235065E+03 0.0 0.0 0.0 0 = Omega_c-Omega_b (deg)
+0.160886160484828508E+03 0.0 0.0 0.0 0 = P_b
+0.505872887935402304E+00 0.0 0.0 0.0 0 = delta_t
+
+
+28383.0D0 11274.0D0 12.0D0 84.0D0 1.0D0 = controlsA
+1.0D0 0.0D0 0.0D0 0.0D0 1.0D0 = controlsB
+Rsol Rdel Rmin Rmax Rflag = [parameter]
+nplen nslen nrlen nelen nlength = [controlsA]
+priflag secflag rvflag ephflag globalflag = [controlsB]

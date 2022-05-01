@@ -1,0 +1,15 @@
+0.15525911 0.0001 0.1552 0.1553 2 = a_c
+180.0 180.0 0.0 360.0 2 = lambda_c (needs to be converted to radiants)
+0.0 0.5 -1.0 1.0 2 = e_c cos(varpi_c)
+0.0 0.5 -1.0 1.0 2 = e_c sin(varpi_c)    
+0.0 0.1 -0.2 0.2 2 = i_c cos(Omega_c), i_c in radians  
+0.0 0.1 -0.2 0.2 2 = i_c sin(Omega_c)    
+0.0 0.5 -1.0 1.0 2 = e_b cos(varpi_b)
+0.0 0.5 -1.0 1.0 2 = e_b sin(varpi_b)
+-5.0 2.0 -6.0 -3.0 2 = log10(m_c/msun)
+-5.0 2.0 -6.0 -3.0 2 = log10(m_b/msun)
+28383.0D0 11274.0D0 12.0D0 84.0D0 1.0D0 = controlsA
+1.0D0 0.0D0 0.0D0 0.0D0 1.0D0 = controlsB
+Rsol Rdel Rmin Rmax Rflag = [parameter]
+nplen nslen nrlen nelen nlength = [controlsA]
+priflag secflag rvflag ephflag globalflag = [controlsB]
