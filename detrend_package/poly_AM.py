@@ -65,7 +65,14 @@ def polyAM_iterative(times, fluxes, mask, mask_fitted_planet,
                 
                 in_transit = False
                 out_transit = True
-            
+
+            '''
+            elif index == len(mask_fitted_planet):
+                out_transit_index = index
+                
+                in_transit = False
+                out_transit = True
+            '''
             
     
     if in_transit_index == 0:
