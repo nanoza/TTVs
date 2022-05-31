@@ -298,8 +298,6 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
                                                 transit_time=t0s[planet_number-1])
 
     
-        
-    
     
     
     

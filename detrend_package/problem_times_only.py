@@ -16,16 +16,16 @@ warnings.simplefilter('ignore', np.RankWarning)
 parser = argparse.ArgumentParser(description="Looks up light curves for TESS and Kepler objects and enables labeling of jump times.",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('object', type=str, help='TESS or Kepler identifier. ex: "toi-2088"')
-parser.add_argument('flux_type', type=str, help='Flux type as a string. Options: pdc, sap, or both')
+parser.add_argument('flux_type', type=str, help='Flux type as a string. Options: pdc, sap, both, or qlp.')
 parser.add_argument('mission', type=str, help='Mission data select. ex: "TESS"')
 parser.add_argument('planet_num', type=int, help='Which planet to look at in system. ex: 1')
 parser.add_argument('save_to_dir', type=str, help='Directory path to save csvs and figures to.')
 parser.add_argument('-d', '--depth', default=0.02, help='Sets depth of detrended plots. Default is 0.02.')
 parser.add_argument('-p', '--period', default=None, help='Optionally input period. Otherwise defaults to what \
-	Exoplanet Archive can find.')
+    Exoplanet Archive can find.')
 parser.add_argument('-t', '--t0', default=None, help='Optionally input t0. Otherwise defaults to what Exoplanet Archive can find.')
 parser.add_argument('-du', '--duration', default=None, help='Optionally input duration. Otherwise defaults to what \
-	Exoplanet Archive can find.')
+    Exoplanet Archive can find.')
 parser.add_argument('-mw', '--mask_width', default=1.3, help='Sets mask width. Default is 1.3.')
 parser.add_argument('-s', '--show_plots', default='True', help='Set whether to show non-problem-time plots.')
 parser.add_argument('--dont_bin', default='False', help='if True, then jump time plots data wont be binned.')
@@ -68,11 +68,11 @@ from detrend import *
 
 # checks user arguments
 if mission_select == 'TESS': 
-	tess_bool = True
-	kepler_bool = False
+    tess_bool = True
+    kepler_bool = False
 else:
-	tess_bool = False # assuming Kepler is selected
-	kepler_bool = True
+    tess_bool = False # assuming Kepler is selected
+    kepler_bool = True
 
 
 # determining figname
@@ -141,12 +141,30 @@ elif flux_type == 'sap':
         user_t0s = input_t0, user_durations = input_duration, 
         mask_width=input_mask_width, dont_bin=input_dont_bin) 
 
+
+
+
+
+# check if we should run just sap
+elif flux_type == 'qlp':
+
+
+    #pulls in light curve
+    [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
+    sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \
+    sap_duration, sap_cadence]  = \
+    find_flux_jumps(input_id, 'qlp', path + '/', 
+        show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, 
+        planet_number = input_planet_number,user_periods = input_period, 
+        user_t0s = input_t0, user_durations = input_duration, 
+        mask_width=input_mask_width, dont_bin=input_dont_bin) 
+
     
 
 
 else:
     print('ERROR!')
-    print('invalid flux_type value entered...options are: pdc, sap, or both')
+    print('invalid flux_type value entered...options are: pdc, sap, both, or qlp.')
 
 
 

@@ -118,6 +118,8 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
         ys = y_transits[ii]
         mask = mask_transits[ii]
         title = "epoch " + str(ii+1)
+
+
         
         slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input, dont_bin=dont_bin)
         sliders.append(slider)

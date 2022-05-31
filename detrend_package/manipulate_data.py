@@ -263,7 +263,7 @@ def split_around_transits(x, y, yerr, mask, mask_fitted_planet, t0s, window, per
         mask_fitted_planet_split[split_index] = np.array(mask_fitted_planet_split[split_index])
 
         split_index += 1
-        
+    
     x_split = np.array(x_split, dtype=object)
     y_split = np.array(y_split, dtype=object)
     yerr_split = np.array(yerr_split, dtype=object)

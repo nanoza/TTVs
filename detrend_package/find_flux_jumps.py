@@ -60,11 +60,16 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 
 
 
+
     x_quarters_w_transits = np.concatenate(x_quarters_w_transits, axis=0, dtype=object)
     y_quarters_w_transits = np.concatenate(y_quarters_w_transits, axis=0, dtype=object)
     yerr_quarters_w_transits = np.concatenate(yerr_quarters_w_transits, axis=0, dtype=object)
     mask_quarters_w_transits = np.concatenate(mask_quarters_w_transits, axis=0, dtype=object)
     mask_fitted_planet_quarters_w_transits = np.concatenate(mask_fitted_planet_quarters_w_transits, axis=0, dtype=object)
+
+
+    mask_quarters_w_transits = np.array(mask_quarters_w_transits, dtype=bool)
+    mask_fitted_planet_quarters_w_transits = np.array(mask_fitted_planet_quarters_w_transits, dtype=bool)
 
 
     x_transits, y_transits, yerr_transits, mask_transits, mask_fitted_planet_transits = split_around_transits(x_quarters_w_transits, 
@@ -73,6 +78,12 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
                                                                                                               mask_quarters_w_transits, 
                                                                                                               mask_fitted_planet_quarters_w_transits, 
                                                                                                               t0s, 1./2., period)
+    
+
+    if len(mask_transits)==1:
+      mask_transits = np.array(mask_transits, dtype=bool)
+      mask_fitted_planet_transits = np.array(mask_fitted_planet_transits, dtype=bool)
+
 
     x_epochs = np.concatenate(x_transits, axis=0, dtype=object)
     y_epochs = np.concatenate(y_transits, axis=0, dtype=object)
