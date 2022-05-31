@@ -7,6 +7,10 @@ from matplotlib.widgets import Slider, Button
 from helper_functions import find_nearest
 from helper_functions import determine_cadence
 
+import math
+import lightkurve as lk
+from astropy.io import fits
+
 def tic_id_from_simbad(other_id):
     #takes other_id (string) and queries Simbad to obtain the TIC ID
     
@@ -27,7 +31,43 @@ def tic_id_from_simbad(other_id):
     return tic_id['ID'].values[0]
 
 
+def tic_id_from_exoplanet_archive(other_id):
+    # if SIMBAD can't get TIC ID, looks for it in exoplanet archive
+    # most of this is from transit_info_from_exoplanet_archive tbh; hesitant to try to merge functions
+    
+    import pandas as pd
 
+
+    # SIMBAD should be able to grab data for already confirmed systems
+    # this is primarily for TOI candidates
+    
+    a = "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=toi&select=toipfx,tid,pl_tranmid,pl_orbper,pl_trandurh&format=csv"
+
+    exoplanets = pd.read_csv(a)
+
+    #rename columns
+    column_dict = {
+    'toipfx':'toi_host',    
+    'tid':'tic_id',
+    'pl_tranmid':'t0 [BJD]',
+    'pl_orbper':'period [days]',
+    'pl_trandurh':'duration [hours]',
+    }
+
+    exoplanets.rename(columns=column_dict, inplace=True)
+    
+    exoplanets['toi_host'] = 'TOI-' + exoplanets['toi_host'].astype(str)
+    exoplanets['tic_id'] = 'TIC ' + exoplanets['tic_id'].astype(str)
+    
+    # replacing any chars that don't match with ones that do; standardizes user input
+    
+    other_id = other_id.lstrip('toi- TOI')
+    other_id = 'TOI-' + other_id # there's probably a smarter way to do this
+    
+    
+    tic_id = exoplanets['tic_id'].loc[exoplanets['toi_host'] == other_id]
+    
+    return tic_id.values[0]
 
 
 
@@ -105,37 +145,46 @@ def get_transit_info(planet_id):
 
     tic_id = tic_id_from_simbad(planet_id)
     
-
-    if tic_id != None:
+    if tic_id == None:
+        # search on exoplanet archive
+        print("No TIC ID match found on Simbad")
+        print("Checking on exoplanet archive")
+        
+        tic_id = tic_id_from_exoplanet_archive(planet_id)
+        
+        if tic_id == None:
+            print("No TIC ID match found on exoplanet archive either.")
+            return None
+        
+        else:
+            print('Found ' + tic_id)
+            transit_info = transit_info_from_exoplanet_archive(tic_id)
+            
+            if transit_info.empty:
+                print("No transit info found (???? Archive TIC ID found.)")
+                return None
+            
+            else:
+                return transit_info
+    
+    else: # Simbad does find TIC ID
         transit_info = transit_info_from_exoplanet_archive(tic_id)
         
         if transit_info.empty:
-            print("No TIC ID match found on exoplanet archive")
+            print("No TIC ID match found on exoplanet archive (???? Simbad TIC ID found.)")
             return None
         
         else:
             return transit_info
+
+
+
+
             
-    else:
-        print("No TIC ID match found on Simbad")
-        return None
-
-
-
-
-
-
-
-
-
 def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False, 
                     user_periods = None, user_t0s = None, user_durations = None,
                     planet_number = 1, mask_width = 1.3):
     
-    import math
-    import numpy as np
-    import lightkurve as lk
-    from astropy.io import fits
 
     transit_info = get_transit_info(planet_id)
     if type(transit_info) == None:

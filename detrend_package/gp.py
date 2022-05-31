@@ -3,15 +3,22 @@ import matplotlib.pyplot as plt
 import exoplanet as xo
 from scipy.interpolate import interp1d
 from matplotlib.widgets import Slider, Button
+from manipulate_data import *
+from helper_functions import *
+from poly_AM import *
+
+import pymc3 as pm
+import pymc3_ext as pmx
+import aesara_theano_fallback.tensor as tt
+from functools import partial
+from celerite2.theano import terms, GaussianProcess
+import theano
+import logging
+from scipy.stats import median_absolute_deviation
+
+def gp_new(time_star, lc_star, lc_err_star, time_model):
 
 
-def gp_model(time_star, lc_star, lc_err_star, time_model):
-
-
-
-
-    import theano
-    import logging
     
     #ignore theano warnings unless it's an error
     logger = logging.getLogger("theano.tensor.opt")
@@ -74,10 +81,9 @@ def gp_model(time_star, lc_star, lc_err_star, time_model):
 
 def gp_method(x, y, yerr, mask, mask_fitted_planet, t0s, duration, period):
     
-    import theano
     theano.config.compute_test_value = "warn"
 
-    from scipy.stats import median_absolute_deviation
+    
     
     gp_mod = []
     gp_mod_all = []
@@ -95,7 +101,7 @@ def gp_method(x, y, yerr, mask, mask_fitted_planet, t0s, duration, period):
         mask_fitted_planet_ii = mask_fitted_planet[ii]
         
 
-        gp_model = gp_model(x_ii[~mask_ii], y_ii[~mask_ii], yerr_ii[~mask_ii], x_ii)
+        gp_model = gp_new(x_ii[~mask_ii], y_ii[~mask_ii], yerr_ii[~mask_ii], x_ii)
         
        
         gp_mod.append(gp_model['pred'])

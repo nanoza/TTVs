@@ -17,7 +17,10 @@ import matplotlib.pyplot as plt
 import exoplanet as xo
 from scipy.interpolate import interp1d
 from matplotlib.widgets import Slider, Button
-
+from manipulate_data import split_around_transits
+from helper_functions import *
+from plot import *
+from poly_AM import *
 
 
 def DurbinWatson(residuals):

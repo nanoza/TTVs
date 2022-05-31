@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import exoplanet as xo
+
 from scipy.interpolate import interp1d
 from matplotlib.widgets import Slider, Button
-
 from helper_functions import bin_data
 
 
 
-def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, problem_times_input=None):
+def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, problem_times_input=None, dont_bin=False):
     #xs_star = time not in transit
     #ys_star = flux not in transit
     #xs_transit = times in transit
@@ -32,10 +32,11 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     plt.subplots_adjust(left=0.2, bottom=0.3, hspace = 0.3)
     
     
-    xstar_bin, ystar_bin = bin_data(xs_star, ys_star, bin_window)
-    xtransit_bin, ytransit_bin = bin_data(xs_transit, ys_transit, bin_window)
-    bin_colors = ["#00008B", "#DC143C"]
-    
+    if not dont_bin:
+        xstar_bin, ystar_bin = bin_data(xs_star, ys_star, bin_window)
+        xtransit_bin, ytransit_bin = bin_data(xs_transit, ys_transit, bin_window)
+        bin_colors = ["#00008B", "#DC143C"]
+        
     t_init = 0
 
     y = np.arange(-.03, .03, 0.000001)
@@ -52,8 +53,9 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     ax.plot(xs_transit, ys_transit, '.', color = 'black', alpha = 0.3)
     
     
-    ax.plot(xstar_bin, ystar_bin, 'o', color = bin_colors[1], alpha = 0.9, markersize = 7)
-    ax.plot(xtransit_bin, ytransit_bin, 'o', color = bin_colors[0], alpha = 0.9, markersize = 7)
+    if not dont_bin:
+        ax.plot(xstar_bin, ystar_bin, 'o', color = bin_colors[1], alpha = 0.9, markersize = 7)
+        ax.plot(xtransit_bin, ytransit_bin, 'o', color = bin_colors[0], alpha = 0.9, markersize = 7)
     
     ax.text(xmin+(xmax-xmin)*.05, 0, title, fontsize = 27)
 
@@ -97,13 +99,13 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
 
 
-def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, problem_times_input=None):
+def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, problem_times_input=None, dont_bin=False):
     #xs = times
     #ys = fluxes
     #mask = masks for transit
     #t0s = midtransits in data
     #period = planet period to define plotting limits
-    
+    plt.close("all")
     sliders, buttons, problem_times = [], [], []
     
     if len(t0s) != len(x_transits):
@@ -117,7 +119,7 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
         mask = mask_transits[ii]
         title = "epoch " + str(ii+1)
         
-        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input)
+        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input, dont_bin=dont_bin)
         sliders.append(slider)
         buttons.append(button)
         problem_times.append(problem_times_epoch)
@@ -156,7 +158,7 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
     
     '''
     import math    
-        
+    plt.close("all") 
 
             
     transit_windows = []
@@ -268,7 +270,7 @@ def plot_detrended_lc(xs, ys, yerrs, detrend_labels, t0s_in_data, window, period
 
 
 def plot_phase_fold_lc(time, lc, period, t0s, xlim):
-    
+    plt.close("all")
     plt.figure(figsize = [18,6])
     x_fold = (
         time - t0s[0] + 0.5 * period
@@ -287,7 +289,7 @@ def plot_phase_fold_lc(time, lc, period, t0s, xlim):
 
 
 
-def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters):
+def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters, figname):
     '''
     input:
     -------
@@ -297,7 +299,7 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
     flux_out = array of flux values without outliers
     '''
     
-    
+    plt.close("all")
     outlier_times = []
     outlier_fluxes = []
     n_outliers = len(flux)-len(flux_out)
@@ -310,10 +312,7 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
             outlier_times.append(time[ii])
             outlier_fluxes.append(flux[ii])
             
-    if outliers_count == n_outliers:
-        print(str(n_outliers) + ' outliers')
-        
-    else:
+    if outliers_count != n_outliers:
         print("ERROR, didn't find all outliers")
             
     fig, ax = plt.subplots(1, 1, figsize = [18,9])
@@ -329,6 +328,8 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
 
         
     fig.tight_layout()
+
+    fig.savefig(figname)
     
     return None
 
@@ -340,11 +341,11 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
 
 
 
-def plot_split_data(x_split, y_split, t0s):
+def plot_split_data(x_split, y_split, t0s, figname):
 
     fig, ax = plt.subplots(nrows=len(x_split), figsize = [18,6*len(x_split)])
     
-
+    plt.close("all")
     if len(x_split) > 1:
         for ii in range(0, len(x_split)):
             xmin = np.min(x_split[ii])
@@ -374,6 +375,9 @@ def plot_split_data(x_split, y_split, t0s):
         ax_ii.set_xlabel("time [days]", fontsize = 18)
         ax_ii.set_ylabel("intensity", fontsize = 18)
         
+    
+
+    fig.savefig(figname)
 
 
     return None
@@ -381,10 +385,7 @@ def plot_split_data(x_split, y_split, t0s):
 
 
 
-
-
-
-def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window, depth):
+def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window, depth, figname):
     '''
     input:
     -------
@@ -397,7 +398,7 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
     t0s = midtransits in data
     '''
     
-    
+    plt.close("all")
     outlier_times = []
     outlier_fluxes = []
     n_outliers = len(flux)-len(flux_out)
@@ -410,11 +411,7 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
             outlier_times.append(time[ii])
             outlier_fluxes.append(flux[ii])
             
-    if outliers_count == n_outliers:
-        print(str(n_outliers) + ' outliers')
-        print('outlier times: ' + str(outlier_times))
-        
-    else:
+    if outliers_count != n_outliers:
         print("ERROR, didn't find all outliers")
             
 
@@ -466,6 +463,8 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
 
         
     fig.tight_layout()
+
+    fig.savefig(figname)
     
     return None
 

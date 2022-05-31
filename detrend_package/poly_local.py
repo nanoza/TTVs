@@ -1,6 +1,12 @@
 ### Special thanks to Alex Teachey --> adapted from MoonPy package
 ### GitHub: https://github.com/alexteachey/MoonPy
 
+import numpy as np
+from manipulate_data import *
+from helper_functions import *
+from poly_AM import *
+from plot import *
+
 def BIC(model, data, errors, nparams):
     chi2 = np.nansum(((model - data) / errors)**2)
     BICval = nparams*np.log(len(data)) + chi2
