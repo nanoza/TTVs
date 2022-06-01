@@ -202,8 +202,7 @@ def split_around_transits(x, y, yerr, mask, mask_fitted_planet, t0s, window, per
     
     
     
-    #print(model)
-    #print(x)
+
     
     xlims = []
     x_split = []

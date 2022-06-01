@@ -47,7 +47,10 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
 
     xmin, xmax = t0-(period*window)[0], t0+(period*window)[0]
-    ymin, ymax = 1.2*np.nanmin(ys_star), 1.2*np.nanmax(ys_star)
+
+    ymin_transit, ymax_transit = 1.2*np.nanmin(ys_transit), 1.2*np.nanmax(ys_transit)
+    ymin_star, ymax_star = 1.2*np.nanmin(ys_star), 1.2*np.nanmax(ys_star)
+    ymin, ymax = np.nanmin([ymin_transit, ymin_star]), np.max([ymax_transit, ymax_star])
     
     ax.plot(xs_star, ys_star, '.', color = 'grey', alpha = 0.3)
     ax.plot(xs_transit, ys_transit, '.', color = 'black', alpha = 0.3)
