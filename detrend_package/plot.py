@@ -37,13 +37,6 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
         xtransit_bin, ytransit_bin = bin_data(xs_transit, ys_transit, bin_window)
         bin_colors = ["#00008B", "#DC143C"]
         
-    t_init = 0
-
-    y = np.arange(-.03, .03, 0.000001)
-
-    t = t_init*np.ones(np.shape(y))
-
-    l = ax.plot(t, y, lw=2, color='k')[0]
 
 
     xmin, xmax = t0-(period*window)[0], t0+(period*window)[0]
@@ -51,6 +44,12 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     ymin_transit, ymax_transit = 1.2*np.nanmin(ys_transit), 1.2*np.nanmax(ys_transit)
     ymin_star, ymax_star = 1.2*np.nanmin(ys_star), 1.2*np.nanmax(ys_star)
     ymin, ymax = np.nanmin([ymin_transit, ymin_star]), np.max([ymax_transit, ymax_star])
+
+    t_init = 0
+
+    y = np.arange(ymin, ymax, 0.000001)
+    t = t_init*np.ones(np.shape(y))
+    l = ax.plot(t, y, lw=2, color='k')[0]
     
     ax.plot(xs_star, ys_star, '.', color = 'grey', alpha = 0.3)
     ax.plot(xs_transit, ys_transit, '.', color = 'black', alpha = 0.3)
@@ -60,7 +59,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
         ax.plot(xstar_bin, ystar_bin, 'o', color = bin_colors[1], alpha = 0.9, markersize = 7)
         ax.plot(xtransit_bin, ytransit_bin, 'o', color = bin_colors[0], alpha = 0.9, markersize = 7)
     
-    ax.text(xmin+(xmax-xmin)*.05, 0, title, fontsize = 27)
+    ax.text(xmin+(xmax-xmin)*.05, .7*ymax, title, fontsize = 27)
 
     ax.axvline(t0, linewidth=1, color='k', ls='dashed')
     ax.set_xlabel("time [days]")
