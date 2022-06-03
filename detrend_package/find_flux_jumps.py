@@ -43,15 +43,15 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
     reject_outliers_out_of_transit(time, lc, lc_err, mask, mask_fitted_planet, 30*cadence, 4)
 
     plot_outliers(time, lc, time_out, flux_out, 
-                  moving_median, quarters_end, figname=save_to_directory+flux_type+'_'+'outliers.pdf')
-    if show_plots == True: plt.show()
+                  moving_median, quarters_end, save_to_directory+flux_type+'_'+'outliers.pdf', star_id)
+    if show_plots: plt.show()
 
     x_quarters, y_quarters, yerr_quarters, mask_quarters, mask_fitted_planet_quarters = \
     split_around_problems(time_out, flux_out, flux_err_out, 
                           mask_out, mask_fitted_planet_out, quarters_end)
 
-    plot_split_data(x_quarters, y_quarters, t0s, figname = save_to_directory+flux_type+'_'+'quarters_split.pdf')
-    if show_plots == True: plt.show()
+    plot_split_data(x_quarters, y_quarters, t0s, save_to_directory+flux_type+'_'+'quarters_split.pdf', star_id)
+    if show_plots: plt.show()
 
     x_quarters_w_transits, y_quarters_w_transits, yerr_quarters_w_transits, \
     mask_quarters_w_transits, mask_fitted_planet_quarters_w_transits = \
@@ -104,7 +104,7 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
       problem_times = []
 
     else: # if not, mark out problem times manually
-      _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, dont_bin = dont_bin)
+      _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, star_id, dont_bin = dont_bin)
       # save problem times
       with open(problem_path, 'w') as problem_file:
         json.dump(problem_times, problem_file)

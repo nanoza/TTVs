@@ -8,7 +8,7 @@ from helper_functions import bin_data
 
 
 
-def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, problem_times_input=None, dont_bin=False):
+def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, object_id, problem_times_input=None, dont_bin=False):
     #xs_star = time not in transit
     #ys_star = flux not in transit
     #xs_transit = times in transit
@@ -66,6 +66,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     ax.set_ylabel("intensity")
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
+    ax.set_title(object_id, fontsize = 27)
 
 
 
@@ -101,7 +102,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
 
 
-def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, problem_times_input=None, dont_bin=False):
+def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, object_id, problem_times_input=None, dont_bin=False):
     #xs = times
     #ys = fluxes
     #mask = masks for transit
@@ -123,7 +124,7 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
 
 
         
-        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input, dont_bin=dont_bin)
+        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, object_id, problem_times_input=problem_times_input, dont_bin=dont_bin)
         sliders.append(slider)
         buttons.append(button)
         problem_times.append(problem_times_epoch)
@@ -293,7 +294,7 @@ def plot_phase_fold_lc(time, lc, period, t0s, xlim):
 
 
 
-def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters, figname):
+def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters, figname, object_id):
     '''
     input:
     -------
@@ -327,8 +328,9 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
     #ax.plot(time, moving_median, '.', color = 'k')
     [ax.axvline(_x, linewidth=1, color='k', ls='--') for _x in kepler_quarters]
 
-    ax.set_xlabel("time [days]")
-    ax.set_ylabel("intensity")
+    ax.set_xlabel("time [days]", fontsize=27)
+    ax.set_ylabel("intensity", fontsize=27)
+    ax.set_title(object_id, fontsize=36)
 
         
     fig.tight_layout()
@@ -345,11 +347,12 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
 
 
 
-def plot_split_data(x_split, y_split, t0s, figname):
+def plot_split_data(x_split, y_split, t0s, figname, object_id):
 
+
+    plt.close("all")
     fig, ax = plt.subplots(nrows=len(x_split), figsize = [18,6*len(x_split)])
     
-    plt.close("all")
     if len(x_split) > 1:
         for ii in range(0, len(x_split)):
             xmin = np.min(x_split[ii])
@@ -360,7 +363,7 @@ def plot_split_data(x_split, y_split, t0s, figname):
             ax_ii.plot(x_split[ii], y_split[ii], 'o', color='grey', alpha=0.7)
             [ax_ii.axvline(_x, linewidth=1, color='k', ls='--') for _x in t0s]
 
-            ax_ii.text(xmin+(xmax-xmin)*.05, 0, 'quarter ' + str(ii), fontsize = 27)
+            ax_ii.text(xmin+(xmax-xmin)*.05, .7*np.max(y_split), 'quarter ' + str(ii), fontsize = 27)
             ax_ii.set_xlim(xmin, xmax)
             ax_ii.set_xlabel("time [days]", fontsize = 18)
             ax_ii.set_ylabel("intensity", fontsize = 18)
@@ -378,6 +381,8 @@ def plot_split_data(x_split, y_split, t0s, figname):
         ax_ii.set_xlim(xmin, xmax)
         ax_ii.set_xlabel("time [days]", fontsize = 18)
         ax_ii.set_ylabel("intensity", fontsize = 18)
+
+    fig.suptitle(object_id, fontsize=36)
         
     
 
@@ -464,6 +469,7 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
 
                 ax.set_xlabel("time [days]")
                 ax.set_ylabel("intensity")
+
 
         
     fig.tight_layout()
