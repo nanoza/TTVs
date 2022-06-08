@@ -26,7 +26,7 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
     #pulls in light curve
     time, lc, lc_err, mask, mask_fitted_planet, \
     t0s, period, duration, quarters, crowding, flux_fraction  = \
-    get_light_curve(star_id, flux_type, TESS, Kepler, 
+    get_light_curve_alt(star_id, flux_type, save_to_directory, TESS, Kepler, 
                     user_periods, user_t0s, user_durations,
                     planet_number, mask_width)
 
