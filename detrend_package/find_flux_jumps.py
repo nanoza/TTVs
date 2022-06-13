@@ -68,8 +68,18 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
     mask_fitted_planet_quarters_w_transits = np.concatenate(mask_fitted_planet_quarters_w_transits, axis=0, dtype=object)
 
 
+
+
+
+
     mask_quarters_w_transits = np.array(mask_quarters_w_transits, dtype=bool)
     mask_fitted_planet_quarters_w_transits = np.array(mask_fitted_planet_quarters_w_transits, dtype=bool)
+
+
+
+
+
+
 
 
     x_transits, y_transits, yerr_transits, mask_transits, mask_fitted_planet_transits = split_around_transits(x_quarters_w_transits, 
@@ -79,6 +89,8 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
                                                                                                               mask_fitted_planet_quarters_w_transits, 
                                                                                                               t0s, 1./2., period)
     
+
+
 
     if len(mask_transits)==1:
       mask_transits = np.array(mask_transits, dtype=bool)
@@ -102,6 +114,7 @@ def find_flux_jumps(star_id, flux_type, save_to_directory, show_plots, TESS = Fa
 
     elif no_jump_times:
       problem_times = []
+
 
     else: # if not, mark out problem times manually
       _, _, problem_times = plot_transits(x_transits, y_transits, mask_transits, t0s, period, cadence*5, star_id, dont_bin = dont_bin)

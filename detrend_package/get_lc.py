@@ -137,20 +137,20 @@ def transit_info_from_exoplanet_archive(tic_id):
 
 
 
-def get_transit_info(planet_id):
+def get_transit_info(object_id):
     #takes a id, queries Simbad to get matching TIC ID
     #then queries exoplanet archive to extract t0, period, and duration
     #if no Simbad match found, then returns None and prints error message
     #if no exoplanet archive match found, then returns None and prints error message
 
-    tic_id = tic_id_from_simbad(planet_id)
+    tic_id = tic_id_from_simbad(object_id)
     
     if tic_id == None:
         # search on exoplanet archive
         print("No TIC ID match found on Simbad")
         print("Checking on exoplanet archive")
         
-        tic_id = tic_id_from_exoplanet_archive(planet_id)
+        tic_id = tic_id_from_exoplanet_archive(object_id)
         
         if tic_id == None:
             print("No TIC ID match found on exoplanet archive either.")
@@ -181,12 +181,12 @@ def get_transit_info(planet_id):
 
 
             
-def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False, 
+def get_light_curve(object_id, flux_type, TESS = False, Kepler = False, 
                     user_periods = None, user_t0s = None, user_durations = None,
                     planet_number = 1, mask_width = 1.3):
     
 
-    transit_info = get_transit_info(planet_id)
+    transit_info = get_transit_info(object_id)
     if type(transit_info) == None:
         return None
     
@@ -221,6 +221,9 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
     
     print('')
     print('')
+
+
+    
     
     
 
@@ -266,13 +269,35 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
     quarters = []
     crowding = []
     flux_fraction = []
-    for file in lc_files:
-        quarters.append([np.min(file.time.value),
-                        np.max(file.time.value)])
-        
-        if flux_type != 'qlp':
-            crowding.append(file.CROWDSAP)
-            flux_fraction.append(file.FLFRCSAP)
+
+    try:
+        for file in lc_files:
+            quarters.append([np.min(file.time.value),
+                            np.max(file.time.value)])
+            
+            if flux_type != 'qlp':
+                crowding.append(file.CROWDSAP)
+                flux_fraction.append(file.FLFRCSAP)
+
+    except TypeError:
+        if TESS:
+            mission = 'TESS'
+        else:
+            mission = 'Kepler'
+        error_message =  'no ' + mission + ' ' + flux_type + ' data found for ' + object_id + ', so the code will break...'
+
+
+        print('')
+        print('')
+        print('')
+        print('')
+        print(error_message)
+        print('')
+        print('')
+        print('')
+        print('')
+
+        return None
         
         
     
@@ -306,6 +331,30 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
     period = np.array([periods[planet_number-1]])
     t0 = t0s[planet_number-1]
     duration = np.array([durations[planet_number-1]])
+
+
+    nan_values = []
+    if np.isnan(period[0]):
+        nan_values.append('period')
+    if np.isnan(t0):
+        nan_values.append('t0')
+    if np.isnan(duration[0]):
+        nan_values.append('duration')
+
+
+
+    if nan_values != []:
+        print('')
+        print('')
+        print('')
+        print('')
+        print(str(nan_values) + ' input is (are) not a number(s), so the code will break...')
+        print('')
+        print('')
+        print('')
+        print('')
+
+        return None
     
     
     print('using the following params for the planet we are fitting')
@@ -330,13 +379,24 @@ def get_light_curve(planet_id, flux_type, TESS = False, Kepler = False,
         t0 += period[0]
     
     
+
+    cadence = determine_cadence(xs)
+
     t0s_in_data = []
     for t0 in t0s_all:
         nearest_lc_time = find_nearest(xs, t0)
-        if np.abs(t0 - nearest_lc_time) < 0.1: # 2.5 hours ~ 0.1 days
+        
+        # if there is a data point within the cadence (times some uncertainty lets say 3) of 
+        # expected transit then there should be transit data
+        if np.abs(t0 - nearest_lc_time) < 3*cadence: 
             t0s_in_data.append(t0)
             
-            
+    
+    print('')
+    print(str(len(t0s_in_data)) + ' transits (or epochs) in total')      
+    print('')
+
+
     mu = np.median( ys )
     ys = ( ys / mu - 1 )
     ys_err = ( ys_err / mu )

@@ -18,6 +18,8 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     
     global problem_times
     
+
+
     if problem_times_input == None:
         problem_times = []
         
@@ -41,9 +43,20 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
     xmin, xmax = t0-(period*window)[0], t0+(period*window)[0]
 
-    ymin_transit, ymax_transit = 1.2*np.nanmin(ys_transit), 1.2*np.nanmax(ys_transit)
-    ymin_star, ymax_star = 1.2*np.nanmin(ys_star), 1.2*np.nanmax(ys_star)
+
+    ymin_transit, ymax_transit = np.nanmin(ys_transit), np.nanmax(ys_transit)
+    ymin_star, ymax_star = np.nanmin(ys_star), np.nanmax(ys_star)
     ymin, ymax = np.nanmin([ymin_transit, ymin_star]), np.max([ymax_transit, ymax_star])
+
+    if ymin > 0:
+        ymin = ymin / 1.2
+    else:
+        ymin = ymin * 1.2
+
+    if ymax > 0:
+        ymax = ymax * 1.2
+    else:
+        ymax = ymax / 1.2
 
     t_init = 0
 
@@ -110,6 +123,7 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
     #period = planet period to define plotting limits
     plt.close("all")
     sliders, buttons, problem_times = [], [], []
+
     
     if len(t0s) != len(x_transits):
         print("ERROR, length of t0s doesn't match length of x_transits")
@@ -123,7 +137,7 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
         title = "epoch " + str(ii+1)
 
 
-        
+
         slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, object_id, problem_times_input=problem_times_input, dont_bin=dont_bin)
         sliders.append(slider)
         buttons.append(button)
@@ -363,7 +377,7 @@ def plot_split_data(x_split, y_split, t0s, figname, object_id):
             ax_ii.plot(x_split[ii], y_split[ii], 'o', color='grey', alpha=0.7)
             [ax_ii.axvline(_x, linewidth=1, color='k', ls='--') for _x in t0s]
 
-            ax_ii.text(xmin+(xmax-xmin)*.05, .7*np.max(y_split), 'quarter ' + str(ii), fontsize = 27)
+            ax_ii.text(xmin+(xmax-xmin)*.05, .7*np.max(y_split[ii]), 'quarter ' + str(ii), fontsize = 27)
             ax_ii.set_xlim(xmin, xmax)
             ax_ii.set_xlabel("time [days]", fontsize = 18)
             ax_ii.set_ylabel("intensity", fontsize = 18)

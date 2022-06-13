@@ -78,9 +78,9 @@ else:
 # determining figname
 # determining today's date
 today = date.today()
-current_day = today.strftime('%b%d_%Y')
+current_day = today.strftime('%B_%d_%Y')
 
-foldername = input_id + '.0' + str(input_planet_number)+ '_' + current_day
+foldername = input_id + '/' + input_id + '.0' + str(input_planet_number)+ '/' + 'detrending' + '/' + current_day
 path = os.path.join(input_dir, foldername)
 
 os.makedirs(path, exist_ok=True)
@@ -145,7 +145,7 @@ elif flux_type == 'sap':
 
 
 
-# check if we should run just sap
+# check if we should run just qlp
 elif flux_type == 'qlp':
 
 
