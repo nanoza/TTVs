@@ -228,7 +228,8 @@ def split_around_transits(x, y, yerr, mask, mask_fitted_planet, t0s, window, per
             model_split.append([])
         
         
-        
+    
+
     split_index = 0
     for xlim in xlims:
         for ii in range(0, len(x)):
@@ -243,7 +244,6 @@ def split_around_transits(x, y, yerr, mask, mask_fitted_planet, t0s, window, per
             
             
             if time >= xlim[0] and time <= xlim[1]:
-                
                 x_split[split_index].append(time)
                 y_split[split_index].append(lc)
                 yerr_split[split_index].append(lc_err)

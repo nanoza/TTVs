@@ -8,7 +8,7 @@ from helper_functions import bin_data
 
 
 
-def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, problem_times_input=None, dont_bin=False):
+def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bin_window, object_id, problem_times_input=None, dont_bin=False):
     #xs_star = time not in transit
     #ys_star = flux not in transit
     #xs_transit = times in transit
@@ -18,6 +18,8 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
     
     global problem_times
     
+
+
     if problem_times_input == None:
         problem_times = []
         
@@ -37,20 +39,30 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
         xtransit_bin, ytransit_bin = bin_data(xs_transit, ys_transit, bin_window)
         bin_colors = ["#00008B", "#DC143C"]
         
-    t_init = 0
-
-    y = np.arange(-.03, .03, 0.000001)
-
-    t = t_init*np.ones(np.shape(y))
-
-    l = ax.plot(t, y, lw=2, color='k')[0]
 
 
     xmin, xmax = t0-(period*window)[0], t0+(period*window)[0]
 
-    ymin_transit, ymax_transit = 1.2*np.nanmin(ys_transit), 1.2*np.nanmax(ys_transit)
-    ymin_star, ymax_star = 1.2*np.nanmin(ys_star), 1.2*np.nanmax(ys_star)
+
+    ymin_transit, ymax_transit = np.nanmin(ys_transit), np.nanmax(ys_transit)
+    ymin_star, ymax_star = np.nanmin(ys_star), np.nanmax(ys_star)
     ymin, ymax = np.nanmin([ymin_transit, ymin_star]), np.max([ymax_transit, ymax_star])
+
+    if ymin > 0:
+        ymin = ymin / 1.2
+    else:
+        ymin = ymin * 1.2
+
+    if ymax > 0:
+        ymax = ymax * 1.2
+    else:
+        ymax = ymax / 1.2
+
+    t_init = 0
+
+    y = np.arange(ymin, ymax, 0.000001)
+    t = t_init*np.ones(np.shape(y))
+    l = ax.plot(t, y, lw=2, color='k')[0]
     
     ax.plot(xs_star, ys_star, '.', color = 'grey', alpha = 0.3)
     ax.plot(xs_transit, ys_transit, '.', color = 'black', alpha = 0.3)
@@ -60,13 +72,14 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
         ax.plot(xstar_bin, ystar_bin, 'o', color = bin_colors[1], alpha = 0.9, markersize = 7)
         ax.plot(xtransit_bin, ytransit_bin, 'o', color = bin_colors[0], alpha = 0.9, markersize = 7)
     
-    ax.text(xmin+(xmax-xmin)*.05, 0, title, fontsize = 27)
+    ax.text(xmin+(xmax-xmin)*.05, .7*ymax, title, fontsize = 27)
 
     ax.axvline(t0, linewidth=1, color='k', ls='dashed')
     ax.set_xlabel("time [days]")
     ax.set_ylabel("intensity")
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
+    ax.set_title(object_id, fontsize = 27)
 
 
 
@@ -102,7 +115,7 @@ def plot_transit(xs_star, ys_star, xs_transit, ys_transit, t0, period, title, bi
 
 
 
-def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, problem_times_input=None, dont_bin=False):
+def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window, object_id, problem_times_input=None, dont_bin=False):
     #xs = times
     #ys = fluxes
     #mask = masks for transit
@@ -110,6 +123,7 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
     #period = planet period to define plotting limits
     plt.close("all")
     sliders, buttons, problem_times = [], [], []
+
     
     if len(t0s) != len(x_transits):
         print("ERROR, length of t0s doesn't match length of x_transits")
@@ -123,8 +137,8 @@ def plot_transits(x_transits, y_transits, mask_transits, t0s, period, bin_window
         title = "epoch " + str(ii+1)
 
 
-        
-        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, problem_times_input=problem_times_input, dont_bin=dont_bin)
+
+        slider, button, problem_times_epoch = plot_transit(xs[~mask], ys[~mask], xs[mask], ys[mask], t0, period, title, bin_window, object_id, problem_times_input=problem_times_input, dont_bin=dont_bin)
         sliders.append(slider)
         buttons.append(button)
         problem_times.append(problem_times_epoch)
@@ -294,7 +308,7 @@ def plot_phase_fold_lc(time, lc, period, t0s, xlim):
 
 
 
-def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters, figname):
+def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters, figname, object_id):
     '''
     input:
     -------
@@ -328,8 +342,9 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
     #ax.plot(time, moving_median, '.', color = 'k')
     [ax.axvline(_x, linewidth=1, color='k', ls='--') for _x in kepler_quarters]
 
-    ax.set_xlabel("time [days]")
-    ax.set_ylabel("intensity")
+    ax.set_xlabel("time [days]", fontsize=27)
+    ax.set_ylabel("intensity", fontsize=27)
+    ax.set_title(object_id, fontsize=36)
 
         
     fig.tight_layout()
@@ -346,11 +361,12 @@ def plot_outliers(time, flux, time_out, flux_out, moving_median, kepler_quarters
 
 
 
-def plot_split_data(x_split, y_split, t0s, figname):
+def plot_split_data(x_split, y_split, t0s, figname, object_id):
 
+
+    plt.close("all")
     fig, ax = plt.subplots(nrows=len(x_split), figsize = [18,6*len(x_split)])
     
-    plt.close("all")
     if len(x_split) > 1:
         for ii in range(0, len(x_split)):
             xmin = np.min(x_split[ii])
@@ -361,7 +377,7 @@ def plot_split_data(x_split, y_split, t0s, figname):
             ax_ii.plot(x_split[ii], y_split[ii], 'o', color='grey', alpha=0.7)
             [ax_ii.axvline(_x, linewidth=1, color='k', ls='--') for _x in t0s]
 
-            ax_ii.text(xmin+(xmax-xmin)*.05, 0, 'quarter ' + str(ii), fontsize = 27)
+            ax_ii.text(xmin+(xmax-xmin)*.05, .7*np.max(y_split[ii]), 'quarter ' + str(ii), fontsize = 27)
             ax_ii.set_xlim(xmin, xmax)
             ax_ii.set_xlabel("time [days]", fontsize = 18)
             ax_ii.set_ylabel("intensity", fontsize = 18)
@@ -379,6 +395,8 @@ def plot_split_data(x_split, y_split, t0s, figname):
         ax_ii.set_xlim(xmin, xmax)
         ax_ii.set_xlabel("time [days]", fontsize = 18)
         ax_ii.set_ylabel("intensity", fontsize = 18)
+
+    fig.suptitle(object_id, fontsize=36)
         
     
 
@@ -465,6 +483,7 @@ def plot_individual_outliers(time, flux, time_out, flux_out, t0s, period, window
 
                 ax.set_xlabel("time [days]")
                 ax.set_ylabel("intensity")
+
 
         
     fig.tight_layout()

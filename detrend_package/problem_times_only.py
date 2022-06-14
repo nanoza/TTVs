@@ -78,9 +78,9 @@ else:
 # determining figname
 # determining today's date
 today = date.today()
-current_day = today.strftime('%b%d_%Y')
+current_day = today.strftime('%B_%d_%Y')
 
-foldername = input_id + '.0' + str(input_planet_number)+ '_' + current_day
+foldername = input_id + '/' + input_id + '.0' + str(input_planet_number)+ '/' + 'detrending' + '/' + current_day
 path = os.path.join(input_dir, foldername)
 
 os.makedirs(path, exist_ok=True)
@@ -96,7 +96,7 @@ if flux_type == 'both':
     [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
     pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
     pdc_duration, pdc_cadence]]  = \
-    find_sap_and_pdc_flux_jumps(input_id, path + '/', show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
+    find_sap_and_pdc_flux_jumps(input_id, path + '/', input_show_plots, TESS = tess_bool, Kepler = kepler_bool, planet_number = input_planet_number,
     user_periods = input_period, user_t0s = input_t0, user_durations = input_duration, mask_width=input_mask_width, dont_bin=input_dont_bin) 
 
 
@@ -116,11 +116,11 @@ elif flux_type == 'pdc':
     [pdc_x_epochs, pdc_y_epochs, pdc_yerr_epochs, pdc_mask_epochs, \
     pdc_mask_fitted_planet_epochs, pdc_problem_times, pdc_t0s, pdc_period, \
     pdc_duration, pdc_cadence]  = \
-    find_flux_jumps(input_id, 'pdcsap_flux', path + '/', 
-        show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, 
+    find_flux_jumps(input_id, 'pdcsap_flux', path + '/', input_show_plots,
+        TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
-        mask_width=input_mask_width, no_jump_times=True, dont_bin=input_dont_bin) 
+        mask_width=input_mask_width, dont_bin=input_dont_bin) 
 
     
 
@@ -135,8 +135,8 @@ elif flux_type == 'sap':
     [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
     sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \
     sap_duration, sap_cadence]  = \
-    find_flux_jumps(input_id, 'sap_flux', path + '/', 
-        show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, 
+    find_flux_jumps(input_id, 'sap_flux', path + '/', input_show_plots,
+        TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
         mask_width=input_mask_width, dont_bin=input_dont_bin) 
@@ -145,7 +145,7 @@ elif flux_type == 'sap':
 
 
 
-# check if we should run just sap
+# check if we should run just qlp
 elif flux_type == 'qlp':
 
 
@@ -153,8 +153,8 @@ elif flux_type == 'qlp':
     [sap_x_epochs, sap_y_epochs, sap_yerr_epochs, sap_mask_epochs, \
     sap_mask_fitted_planet_epochs, sap_problem_times, sap_t0s, sap_period, \
     sap_duration, sap_cadence]  = \
-    find_flux_jumps(input_id, 'qlp', path + '/', 
-        show_plots = input_show_plots, TESS = tess_bool, Kepler = kepler_bool, 
+    find_flux_jumps(input_id, 'qlp', path + '/', input_show_plots,
+        TESS = tess_bool, Kepler = kepler_bool, 
         planet_number = input_planet_number,user_periods = input_period, 
         user_t0s = input_t0, user_durations = input_duration, 
         mask_width=input_mask_width, dont_bin=input_dont_bin) 

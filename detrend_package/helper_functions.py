@@ -52,7 +52,9 @@ def find_nearest(array, value):
 
 def bin_data(xs, ys, window):
     
-    
+    import warnings
+
+
     xmin = np.min(xs)
     xmax = np.max(xs)
     
@@ -66,7 +68,6 @@ def bin_data(xs, ys, window):
         x_bin_jj = x_bin[jj]
         x_bin_jj_minus_1 = x_bin[jj-1]
         
-        #print((x_bin_jj_minus_1, x_bin_jj))
             
             
     for ii in range(0, len(xs)):
@@ -90,7 +91,9 @@ def bin_data(xs, ys, window):
     
     y_bin_mean = []
     for ii in range(0, len(y_bin)):
-        y_bin_mean.append(np.nanmean(np.array(y_bin[ii])))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            y_bin_mean.append(np.nanmean(np.array(y_bin[ii])))
         
     
     
